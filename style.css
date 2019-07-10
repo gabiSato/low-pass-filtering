@@ -3,3 +3,6 @@ html, body {
     padding: 0;
   }
   
+  canvas {
+    z-index: -1;
+  }
