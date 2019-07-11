@@ -1,75 +1,85 @@
 var img;
-var proc_img;
+var result;
 var canvas;
 
-var canvas_w = 860
-var canvas_h = 600
+var canvas_w = 860;
+var canvas_h = 600;
 
 var gui = new dat.GUI();
 
 var options = {
-  neighbours: 9,
-  threshold: 5,
-}
+	neighbours: 9,
+	threshold: 5,
+	border: false,
+};
 
 var neighbours = options.neighbours;
 var threshold = options.threshold;
+var border = options.border;
 
-gui.add(options, "neighbours", {9: 9, 25: 25, 49: 49, 81: 81}).onChange(
-  function(value) {
-    neighbours = value;
-  }
-);
-gui.add(options, "threshold", 0, 500).onChange(
-  function(value) {
-    threshold = value;
-  }
-);
+gui.add(options, 'neighbours', { 9: 9, 25: 25, 49: 49, 81: 81 }).onChange(function(value) {
+	neighbours = value;
+	update = true;
+});
+gui.add(options, 'threshold', 0, 50).onChange(function(value) {
+	threshold = value;
+	update = true;
+});
+gui.add(options, 'border').onChange(function(value) {
+	border = value;
+	update = true;
+});
 
 function setup() {
-  canvas = createCanvas(canvas_w, canvas_h);
-  repositionCanvas();
-  background(200);
-  textAlign(CENTER);
-  text('Arraste a imagem aqui', width / 2, height / 2);
-  canvas.drop(gotFile);
+	canvas = createCanvas(canvas_w, canvas_h);
+	repositionCanvas();
+	background(200);
+	textAlign(CENTER);
+	text('Arraste a imagem aqui', width / 2, height / 2);
+	canvas.drop(gotFile);
 }
 
 function draw() {
-  if(img) {
-    copy(img, 7, 22, 10, 10, 35, 25, 50, 50);
-    img.loadPixels();
-	  let d = pixelDensity();
-	  for (let i = 0; i < 4 * (img.width * img.height); i += 4) {
-		  const index1 = brightness(getColor(i));
-		  const index2 = brightness(getColor(i, 1));
-		  var diff = abs(index1 - index2);
-		  if (diff > options.threshold) {
-			  // img.pixels[i] = img.pixels[i];
-			  // img.pixels[i + 1] = 0;
-			  // img.pixels[i + 2] = 0;
-			  // img.pixels[i + 3] = img.pixels[i + 3];
-			  setColor(i, options.neighbours);
-		  }
-		  // else {
-		  // 	img.pixels[i] = 255;
-		  // 	img.pixels[i + 1] = 255;
-		  // 	img.pixels[i + 2] = 255;
-		  // 	img.pixels[i + 3] = img.pixels[i + 3];
-		  // }
-	  }
-	  img.updatePixels();
-	  image(img, 0, 0, img.width, img.height);
-  }
+	if (img) {
+		img.loadPixels();
+		result = createImage(img.width, img.height);
+		result.loadPixels();
+		let d = pixelDensity();
+		for (let i = 0; i < 4 * (img.width * img.height); i += 4) {
+			const index1 = brightness(getColor(i));
+			const index2 = brightness(getColor(i, 1));
+			var diff = abs(index1 - index2);
+			result.pixels[i] = img.pixels[i];
+			result.pixels[i + 1] = img.pixels[i + 1];
+			result.pixels[i + 2] = img.pixels[i + 2];
+			result.pixels[i + 3] = img.pixels[i + 3];
+			if (options.border) {
+				if (diff > options.threshold) {
+					result.pixels[i] = img.pixels[i];
+					result.pixels[i + 1] = 0;
+					result.pixels[i + 2] = 0;
+					result.pixels[i + 3] = 0;
+				} else {
+					result.pixels[i] = 255;
+					result.pixels[i + 1] = 255;
+					result.pixels[i + 2] = 255;
+					result.pixels[i + 3] = 255;
+				}
+			} else {
+				if (diff > options.threshold) setColor(i, options.neighbours);
+			}
+		}
+		result.updatePixels();
+		image(result, 0, 0, result.width, result.height);
+	}
 }
 
 function repositionCanvas() {
-  if (canvas) canvas.position((window.innerWidth / 2) - (canvas_w / 2), (window.innerHeight / 2) - (canvas_h / 2));
+	if (canvas) canvas.position(window.innerWidth / 2 - canvas_w / 2, window.innerHeight / 2 - canvas_h / 2);
 }
 
 function gotFile(file) {
-  console.log(file)
-  img = loadImage(file.data);
+	img = loadImage(file.data);
 }
 
 function getColor(i, position = 0) {
@@ -95,10 +105,10 @@ function setColor(i, modifier) {
 		b = img.pixels[index + 2] / modifier + b;
 		a = img.pixels[index + 3] / modifier + a;
 	}
-	img.pixels[i] = r;
-	img.pixels[i + 1] = g;
-	img.pixels[i + 2] = b;
-	img.pixels[i + 3] = a;
+	result.pixels[i] = r;
+	result.pixels[i + 1] = g;
+	result.pixels[i + 2] = b;
+	result.pixels[i + 3] = a;
 }
 
-window.addEventListener("resize", repositionCanvas)
+window.addEventListener('resize', repositionCanvas);
